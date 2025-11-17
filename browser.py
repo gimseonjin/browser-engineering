@@ -1,11 +1,10 @@
 import tkinter
 import sys
-from turtle import width
 
 from parser import HTMLParser
 from url import URLFactory
-from constants import SCROLL_STEP, VSTEP, HSTEP
-from layout import Layout
+from constants import HEIGHT, SCROLL_STEP, VSTEP, HSTEP
+from layout import BlockLayout, DocumentLayout, paint_tree
 
 class Browser:
     def __init__(self):
@@ -39,28 +38,27 @@ class Browser:
         self.canvas.bind("<Configure>", self.on_resize)
 
     def get_max_y(self):
-        if not hasattr(self, 'display_list') or not self.display_list:
-            return 0
-        return max(y for _, y, _, _ in self.display_list) + VSTEP
+        # 문서의 전체 높이 반환 (상단 여백 포함)
+        return self.document.height + 2 * VSTEP
     
     def update_scrollbar(self):
         if not hasattr(self, 'display_list'):
             return
         
-        max_y = self.get_max_y()
-        if max_y <= self.height:
+        document_height = self.get_max_y()
+        if document_height <= self.height:
             # 스크롤할 내용이 없으면 스크롤바를 전체로 설정
             self.scrollbar.set(0.0, 1.0)
             return
         
         # 스크롤 가능한 최대 높이
-        max_scroll = max_y - self.height
+        max_scroll = document_height - self.height
         
         # 현재 스크롤 위치를 0.0~1.0 사이의 값으로 변환
         top = self.scroll / max_scroll if max_scroll > 0 else 0.0
         
         # thumb의 크기 (화면 높이 / 전체 높이)
-        thumb_size = self.height / max_y
+        thumb_size = self.height / document_height
         
         # bottom 위치
         bottom = top + thumb_size
@@ -74,18 +72,16 @@ class Browser:
     
     def draw(self):
         self.canvas.delete("all")
-        if not hasattr(self, 'display_list'):
-            return
-        for x, y, c, font in self.display_list:
-            if y > self.scroll + self.height: continue
-            if y + VSTEP < self.scroll: continue
-            self.canvas.create_text(x, y - self.scroll, text=c, anchor="nw", font=font)
+        for cmd in self.display_list:
+            if cmd.top > self.scroll + self.height: continue
+            if cmd.bottom < self.scroll: continue
+            cmd.execute(self.scroll, self.canvas)
         self.update_scrollbar()
 
     def scrolldown(self, e):
         print(e)
-        max_y = self.get_max_y()
-        max_scroll = max(0, max_y - self.height)
+        document_height = self.get_max_y()
+        max_scroll = max(0, document_height - self.height)
         self.scroll = min(self.scroll + SCROLL_STEP, max_scroll)
         self.draw()
 
@@ -116,8 +112,11 @@ class Browser:
             else:
                 raise Exception("Redirect without Location header")
         
-        self.token = nodes
-        self.display_list = Layout(self.token, self.width).display_list
+        self.nodes = nodes
+        self.document = DocumentLayout(self.nodes, self.width)
+        self.document.layout()
+        self.display_list = []
+        paint_tree(self.document, self.display_list)
         self.draw()
     
     def on_resize(self, e):
@@ -127,7 +126,11 @@ class Browser:
         if new_width != self.width or new_height != self.height:
             self.width = new_width
             self.height = new_height
-            self.display_list = Layout(self.token, self.width).display_list
+
+            self.document = DocumentLayout(self.nodes, self.width)
+            self.document.layout()
+            self.display_list = []
+            paint_tree(self.document, self.display_list)
             self.draw()
     
     def on_scrollbar(self, *args):
@@ -142,8 +145,8 @@ class Browser:
                 position = float(args[1])
                 # 0.0~1.0 범위로 제한
                 position = max(0.0, min(1.0, position))
-                max_y = self.get_max_y()
-                max_scroll = max(0, max_y - self.height)
+                document_height = self.get_max_y()
+                max_scroll = max(0, document_height - self.height)
                 self.scroll = position * max_scroll
                 self.draw()
         
@@ -152,8 +155,8 @@ class Browser:
             if len(args) >= 3:
                 units = int(args[1])
                 unit_type = args[2]
-                max_y = self.get_max_y()
-                max_scroll = max(0, max_y - self.height)
+                document_height = self.get_max_y()
+                max_scroll = max(0, document_height - self.height)
                 
                 if unit_type == "units":
                     self.scroll = max(0, min(self.scroll + units * SCROLL_STEP, max_scroll))
