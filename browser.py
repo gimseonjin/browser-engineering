@@ -1,9 +1,10 @@
 import tkinter
 import sys
+from turtle import width
 
 from url import URLFactory
 from constants import SCROLL_STEP, VSTEP, HSTEP
-from util import lex, layout
+from layout import Layout, lex
 
 class Browser:
     def __init__(self):
@@ -37,13 +38,11 @@ class Browser:
         self.canvas.bind("<Configure>", self.on_resize)
 
     def get_max_y(self):
-        """전체 콘텐츠의 최대 높이 계산"""
         if not hasattr(self, 'display_list') or not self.display_list:
             return 0
-        return max(y for _, y, _ in self.display_list) + VSTEP
+        return max(y for _, y, _, _ in self.display_list) + VSTEP
     
     def update_scrollbar(self):
-        """스크롤바 thumb 위치 업데이트"""
         if not hasattr(self, 'display_list'):
             return
         
@@ -76,10 +75,10 @@ class Browser:
         self.canvas.delete("all")
         if not hasattr(self, 'display_list'):
             return
-        for x, y, c in self.display_list:
+        for x, y, c, font in self.display_list:
             if y > self.scroll + self.height: continue
             if y + VSTEP < self.scroll: continue
-            self.canvas.create_text(x, y - self.scroll, text=c)
+            self.canvas.create_text(x, y - self.scroll, text=c, anchor="nw", font=font)
         self.update_scrollbar()
 
     def scrolldown(self, e):
@@ -114,8 +113,8 @@ class Browser:
             else:
                 raise Exception("Redirect without Location header")
         
-        self.text = lex(body)
-        self.display_list = layout(self.text, self.width)
+        self.token = lex(body)
+        self.display_list = Layout(self.token, self.width).display_list
         self.draw()
     
     def on_resize(self, e):
@@ -125,9 +124,8 @@ class Browser:
         if new_width != self.width or new_height != self.height:
             self.width = new_width
             self.height = new_height
-            if hasattr(self, 'text'):
-                self.display_list = layout(self.text, self.width)
-                self.draw()
+            self.display_list = Layout(self.token, self.width).display_list
+            self.draw()
     
     def on_scrollbar(self, *args):
         if not args:
