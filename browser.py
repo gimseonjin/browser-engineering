@@ -2,9 +2,10 @@ import tkinter
 import sys
 from turtle import width
 
+from parser import HTMLParser
 from url import URLFactory
 from constants import SCROLL_STEP, VSTEP, HSTEP
-from layout import Layout, lex
+from layout import Layout
 
 class Browser:
     def __init__(self):
@@ -101,10 +102,12 @@ class Browser:
         try:
             url_obj = URLFactory.parse(url)
             status, headers, body = url_obj.request()
+            nodes = HTMLParser(body).parse()
         except (ValueError, Exception) as e:
             # URL이 잘못된 경우 about:blank 로드
             url_obj = URLFactory.parse("about:blank")
             status, headers, body = url_obj.request()
+            nodes = HTMLParser(body).parse()
         
         if 300 <= status < 400:
             location = headers.get("location")
@@ -113,7 +116,7 @@ class Browser:
             else:
                 raise Exception("Redirect without Location header")
         
-        self.token = lex(body)
+        self.token = nodes
         self.display_list = Layout(self.token, self.width).display_list
         self.draw()
     

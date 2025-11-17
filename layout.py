@@ -4,39 +4,23 @@ from font import get_font
 
 
 class Text:
-    def __init__(self, text):
+    def __init__(self, text, parent):
         self.text = text
+        self.children = []
+        self.parent = parent
+    
+    def __repr__(self) -> str:
+        return repr(self.text)
 
-class Tag:
-    def __init__(self, tag):
+class Element:
+    def __init__(self, tag, attributes, parent):
         self.tag = tag
+        self.attributes = attributes
+        self.children = []
+        self.parent = parent
 
-def lex(body):
-    out = []
-    buffer = ""
-    in_tag = False
-
-    for c in body:
-        if c == "<":
-            in_tag = True
-            if buffer: out.append(Text(buffer))
-            buffer = ""
-        elif c == ">":
-            in_tag = False
-            out.append(Tag(buffer))
-            buffer = ""
-        else:
-            if c == "&lt;":
-                c = "<"
-            elif c == "&gt;":
-                c = ">"
-             
-            buffer += c
-
-    if not in_tag and buffer:
-        out.append(Text(buffer))
-
-    return out
+    def __repr__(self) -> str:
+        return f"<{self.tag}>"
 
 class Layout:
     def __init__(self, tokens, width):
@@ -48,41 +32,45 @@ class Layout:
         self.width = width
         self.weight = "normal"
         self.style = "roman"
-        for tok in tokens:
-            self.token(tok)
+
+        self.recurse(tokens)
         self.flush()
     
-    def token(self, token):
-        if isinstance(token, Tag):
-            self.tag(token)
-
-        if isinstance(token, Text):
-            for word in token.text.split():
-                self.word(word)
-
-    def tag(self, token):
-        if token.tag == "i":
+    def open_tag(self, tag):
+        if tag == "i":
             self.style = "italic"
-        elif token.tag == "/i":
-            self.style = "roman"
-        elif token.tag == "b":
+        elif tag == "b":
             self.weight = "bold"
-        elif token.tag == "/b":
-            self.weight = "normal"
-        elif token.tag == "small":
+        elif tag == "small":
             self.size -= 2
-        elif token.tag == "/small":
-            self.size += 2
-        elif token.tag == "big":
+        elif tag == "big":
             self.size += 4
-        elif token.tag == "/big":
-            self.size -= 4
-        elif token.tag == "br":
+        elif tag == "br/":
             self.flush()
-        elif token.tag == "/p":
+    
+    def close_tag(self, tag):
+        if tag == "i":
+            self.style = "roman"
+        elif tag == "b":
+            self.weight = "normal"
+        elif tag == "small":
+            self.size += 2
+        elif tag == "big":
+            self.size -= 4
+        elif tag == "p":
             self.flush()
             self.cursor_y += VSTEP
     
+    def recurse(self, tree):
+        if isinstance(tree, Text):
+            for word in tree.text.split():
+                self.word(word)
+        else:
+            self.open_tag(tree.tag)
+            for child in tree.children:
+                self.recurse(child)
+            self.close_tag(tree.tag)
+
     # Text 의 text string
     def word(self, word):
         font = get_font(self.size, self.weight, self.style)
