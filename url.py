@@ -254,9 +254,22 @@ class FileURL(URL):
             return 200, {}, body
 
 
+class AboutBlankURL(URL):
+    def __init__(self, schema, raw_url):
+        super().__init__(schema, raw_url)
+        self.port = None  # not used
+
+    def request(self):
+        return 200, {}, ""
+
+
 class URLFactory:
     @staticmethod
     def parse(url: str) -> URL:
+        # about:blank 처리
+        if url == "about:blank":
+            return AboutBlankURL("about", "blank")
+        
         schema, rest = url.split("://", 1)
 
         if schema == "http":
@@ -267,38 +280,3 @@ class URLFactory:
             return FileURL(schema, rest)
         else:
             raise ValueError(f"Unsupported schema: {schema}")
-
-def show(body):
-    in_tag = False
-    for c in body:
-        if c == "<":
-            in_tag = True
-        elif c == ">":
-            in_tag = False
-        elif not in_tag:
-            if c == "&lt;":
-                c = "<"
-            elif c == "&gt;":
-                c = ">"
-            print(c, end="")
-
-def load(url, max_redirects=10):
-    if max_redirects <= 0:
-        raise Exception("Too many redirects")
-    
-    status, headers, body = url.request()
-    
-    if 300 <= status < 400:
-        location = headers.get("location")
-        if location:
-            new_url = URLFactory.parse(location)
-            return load(new_url, max_redirects - 1)
-        else:
-            raise Exception("Redirect without Location header")
-    
-    show(body)
-
-if __name__ == "__main__":
-    import sys
-    url = URLFactory.parse(sys.argv[1])
-    load(url)
