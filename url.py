@@ -63,6 +63,14 @@ class URL(ABC):
 
         self._parse_host_and_path(raw_url)
 
+    def __str__(self):
+        port_part = ":" + str(self.port)
+        if self.schema == "https" and self.port == 443:
+            port_part = ""
+        elif self.schema == "http" and self.port == 80:
+            port_part = ""
+        return f"{self.schema}://{self.host}{port_part}{self.path}"
+
     def _parse_host_and_path(self, raw):
         # host / path parsing
         if "/" not in raw:
@@ -286,9 +294,12 @@ class URLFactory:
         """상대 경로를 절대 URL 객체로 변환"""
         # 딕셔너리에서 href 값을 추출
         url = url.get("href", "")
+        
+        # 절대 URL인 경우 (스킴이 있는 경우) 그대로 파싱하여 반환
+        if "://" in url:
+            return URLFactory.parse(url)
+        
         # 상대 경로 처리: ../ 처리
-        print(url)
-        print(current_url)
         if not url.startswith("/"):
             dir, _ = current_url.path.rsplit("/", 1)
             while url.startswith("../"):
@@ -308,3 +319,30 @@ class URLFactory:
                      ":" + str(current_url.port) + url
         
         return URLFactory.parse(url_str)
+
+    @staticmethod
+    def resolve_str(current_url: URL, url: str) -> str:
+        """상대 경로를 절대 URL 문자열로 변환"""
+        # 절대 URL인 경우 (스킴이 있는 경우) 그대로 반환
+        if "://" in url:
+            return url
+        
+        if not url.startswith("/"):
+            dir, _ = current_url.path.rsplit("/", 1)
+            while url.startswith("../"):
+                _, url = url.split("/", 1)
+                if "/" in dir:
+                    dir, _ = dir.rsplit("/", 1)
+            url = dir + "/" + url
+        
+        # 기본 포트는 생략 (HTTP: 80, HTTPS: 443)
+        default_ports = {"http": 80, "https": 443}
+        default_port = default_ports.get(current_url.schema)
+        
+        if default_port and current_url.port == default_port:
+            url_str = current_url.schema + "://" + current_url.host + url
+        else:
+            url_str = current_url.schema + "://" + current_url.host + \
+                     ":" + str(current_url.port) + url
+        
+        return url_str

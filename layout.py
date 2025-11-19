@@ -2,6 +2,18 @@ from constants import HSTEP, VSTEP, WIDTH
 from font import get_font
 
 
+class Rect:
+    def __init__(self, left, top, right, bottom):
+        self.left = left
+        self.top = top
+        self.right = right
+        self.bottom = bottom
+    
+    def containsPoint(self, x, y):
+        return x >= self.left and x < self.right \
+            and y >= self.top and y < self.bottom
+
+
 class Text:
     def __init__(self, text, parent):
         self.text = text
@@ -23,16 +35,14 @@ class Element:
 
 class DrawText:
     def __init__(self, x1, y1, text, font, color):
-        self.top = y1
-        self.left = x1
+        self.rect = Rect(x1, y1, x1 + font.measure(text), y1 + font.metrics("linespace"))
         self.text = text
         self.font = font
-        self.bottom = y1 + font.metrics("linespace")
         self.color = color
 
     def execute(self, scroll, canvas):
         canvas.create_text(
-            self.left, self.top - scroll,
+            self.rect.left, self.rect.top - scroll,
             text=self.text,
             font=self.font,
             fill=self.color,
@@ -41,19 +51,45 @@ class DrawText:
 
 class DrawRect:
     def __init__(self, x1, y1, x2, y2, color):
-        self.top = y1
-        self.left = x1
-        self.bottom = y2
-        self.right = x2
+        self.rect = Rect(x1, y1, x2, y2)
         self.color = color
 
     def execute(self, scroll, canvas):
         canvas.create_rectangle(
-            self.left, self.top - scroll,
-            self.right, self.bottom - scroll,
+            self.rect.left, self.rect.top - scroll,
+            self.rect.right, self.rect.bottom - scroll,
             width = 0,
             fill=self.color
         )
+
+class DrawOutline:
+    def __init__(self, rect, color, thickness):
+        self.rect = rect
+        self.color = color
+        self.thickness = thickness
+    
+    def execute(self, scroll, canvas):
+        canvas.create_rectangle(
+            self.rect.left, self.rect.top - scroll,
+            self.rect.right, self.rect.bottom - scroll,
+            width = self.thickness,
+            outline = self.color
+        )
+
+class DrawLine:
+    def __init__(self, x1, y1, x2, y2, color, thickness):
+        self.rect = Rect(x1, y1, x2, y2)
+        self.color = color
+        self.thickness = thickness
+
+    def execute(self, scroll, canvas):
+        canvas.create_line(
+            self.rect.left, self.rect.top - scroll,
+            self.rect.right, self.rect.bottom - scroll,
+            width = self.thickness,
+            fill = self.color
+        )
+    
 
 class DocumentLayout:
     def __init__(self, node, width):
@@ -146,81 +182,71 @@ class BlockLayout:
             self.style = "roman"
 
             self.line = []
+            self.new_line()
             self.recurse(self.node)
-            self.flush()
             # 높이 계산은 flush 로 계산 하고 나서
-            self.height = self.cursor_y
+            for child in self.children:
+                child.layout()
+            self.height = sum([child.height for child in self.children])
 
-    def open_tag(self, tag):
-        if tag == "i":
-            self.style = "italic"
-        elif tag == "b":
-            self.weight = "bold"
-        elif tag == "small":
-            self.size -= 2
-        elif tag == "big":
-            self.size += 4
-        elif tag == "br/":
-            self.flush()
-    
-    def close_tag(self, tag):
-        if tag == "i":
-            self.style = "roman"
-        elif tag == "b":
-            self.weight = "normal"
-        elif tag == "small":
-            self.size += 2
-        elif tag == "big":
-            self.size -= 4
-        elif tag == "p":
-            self.flush()
-            self.cursor_y += VSTEP
-    
     def recurse(self, node):
         if isinstance(node, Text):
             for word in node.text.split():
                 self.word(node, word)
         else:
             if node.tag == "br":
-                self.flush()
+                self.new_line()
             for child in node.children:
                 self.recurse(child)
 
-    # Text 의 text string
     def word(self, node, word):
+        line = self.children[-1]
+        previouse_word = line.children[-1] if line.children else None
+        
+        # 이전 단어가 있으면 먼저 layout 호출하여 위치 계산
+        if previouse_word and (not hasattr(previouse_word, 'x') or previouse_word.x is None):
+            previouse_word.layout()
+        
+        # 단어의 폰트 정보 가져오기
         color = node.style["color"]
         weight = node.style["font-weight"]
-        style = node.style["font-style"]
-        if style == "normal":
-            style = "roman"
+        style_val = node.style["font-style"]
+        if style_val == "normal":
+            style_val = "roman"
+        elif style_val == "oblique":
+            style_val = "italic"
         size = int(float(node.style["font-size"][:-2]) * .75)
-        font = get_font(size, weight, style)
+        font = get_font(size, weight, style_val)
         
-        w = font.measure(word)
-        # 줄이 넘치면 먼저 현재 줄을 flush
-        if self.cursor_x + w > self.width:
-            self.flush()
+        word_width = font.measure(word)
+        space_width = font.measure(" ")
         
-        # 단어를 현재 줄에 추가
-        self.line.append((self.cursor_x, word, font, color))
-        self.cursor_x += w + font.measure(" ")
-
-    def flush(self):
-        if not self.line: return
-        metrics = [font.metrics() for _, _, font, _ in self.line]
-        max_ascent = max([metric["ascent"] for metric in metrics])
-        baseline = self.cursor_y + 1.25 * max_ascent
-
-        for rel_x, word, font, color in self.line:
-            x = self.x + rel_x
-            y = self.y + baseline - font.metrics("ascent")
-            self.display_list.append((x, y, word, font, color))
+        # 현재 줄에서 단어가 들어갈 위치 계산
+        if previouse_word:
+            # 이전 단어가 있으면 이전 단어의 끝 위치 + 공백 + 단어 너비
+            total_width = previouse_word.x + previouse_word.width + space_width + word_width
+        else:
+            # 이전 단어가 없으면 줄 시작 위치 + 단어 너비
+            total_width = line.x + word_width
         
-        max_descent = max(metric["descent"] for metric in metrics)
-        self.cursor_y = baseline + 1.25 * max_descent
+        # 줄을 넘어가면 새 줄 생성
+        if total_width > line.x + line.width:
+            self.new_line()
+            line = self.children[-1]
+            previouse_word = None
+        
+        # 단어 추가
+        text = TextLayout(node, word, line, previouse_word)
+        line.children.append(text)
 
+    def new_line(self):
         self.cursor_x = 0
-        self.line = []
+        last_line = self.children[-1] if self.children else None
+        new_line = LineLayout(self.node, self, last_line)
+        self.children.append(new_line)
+
+    def self_rect(self):
+        return Rect(self.x, self.y, self.x + self.width, self.y + self.height)
 
     def paint(self):
         cmds = []
@@ -230,8 +256,7 @@ class BlockLayout:
         bgcolor = self.node.style.get("background-color",
                                         "transparent")
         if bgcolor != "transparent":
-            x2, y2 = self.x + self.width, self.y + self.height
-            rect = DrawRect(self.x, self.y, x2, y2, bgcolor)
+            rect = DrawRect(self.x, self.y, self.x + self.width, self.y + self.height, bgcolor)
             cmds.append(rect)
             
         if self.layout_mode() == "inline":
@@ -239,6 +264,83 @@ class BlockLayout:
                 cmds.append(DrawText(x, y, word, font, color))
 
         return cmds
+
+class LineLayout:
+    def __init__(self, node, parent, previous):
+        self.node = node
+        self.parent = parent
+        self.previous = previous
+        self.children = []
+        self.width = self.parent.width
+        self.x = self.parent.x
+        self.y = None
+        self.height = None
+    
+    def layout(self):
+        # y 위치 계산 (이전 줄이 있으면 이전 줄의 layout이 먼저 호출되어야 함)
+        if self.previous:
+            # 이전 줄이 아직 layout되지 않았다면 먼저 layout 호출
+            if self.previous.height is None:
+                self.previous.layout()
+            self.y = self.previous.y + self.previous.height
+        else:
+            self.y = self.parent.y
+        
+        for word in self.children:
+            word.layout()
+        
+        # 빈 줄인 경우 처리
+        if not self.children:
+            # 기본 폰트를 사용하여 최소 높이 설정
+            from font import get_font
+            default_font = get_font(12, "normal", "roman")
+            self.height = 1.25 * default_font.metrics("linespace")
+            return
+        
+        max_ascent = max(word.font.metrics("ascent") for word in self.children)
+        baseline = self.y + 1.25 * max_ascent
+
+        for word in self.children:
+            word.y = baseline - word.font.metrics("ascent")
+            
+        max_descent = max(word.font.metrics("descent") for word in self.children)
+        self.height =1.25 * (max_ascent + max_descent)
+
+    def paint(self):
+        return []
+
+class TextLayout:
+    def __init__(self, node, word, parent, previous):
+        self.node = node
+        self.word = word
+        self.children = []
+        self.parent = parent
+        self.previous = previous
+
+    def layout(self):
+        color = self.node.style["color"]
+        weight = self.node.style["font-weight"]
+        style = self.node.style["font-style"]
+        if style == "normal":
+            style = "roman"
+        elif style == "oblique":
+            style = "italic"
+        size = int(float(self.node.style["font-size"][:-2]) * .75)
+        self.font = get_font(size, weight, style)
+
+        self.width = self.font.measure(self.word)
+
+        if self.previous:
+            space = self.font.measure(" ")
+            self.x = self.previous.x + self.previous.width + space
+        else:
+            self.x = self.parent.x
+
+        self.height = self.font.metrics("linespace")
+        
+    def paint(self):
+        color = self.node.style["color"]
+        return [DrawText(self.x, self.y, self.word, self.font, color)]
 
 def paint_tree(layout_object, display_list):
     display_list.extend(layout_object.paint())
