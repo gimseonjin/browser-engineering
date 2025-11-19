@@ -72,7 +72,7 @@ class URL(ABC):
         self.path = "/" + path
 
         # Optional port
-        if ":" in self.host:
+        if ":" in self.host and not isinstance(self, FileURL):
             self.host, port = self.host.split(":", 1)
             self.port = int(port)
 
@@ -280,3 +280,31 @@ class URLFactory:
             return FileURL(schema, rest)
         else:
             raise ValueError(f"Unsupported schema: {schema}")
+    
+    @staticmethod
+    def resolve(current_url: URL, url: dict) -> URL:
+        """상대 경로를 절대 URL 객체로 변환"""
+        # 딕셔너리에서 href 값을 추출
+        url = url.get("href", "")
+        # 상대 경로 처리: ../ 처리
+        print(url)
+        print(current_url)
+        if not url.startswith("/"):
+            dir, _ = current_url.path.rsplit("/", 1)
+            while url.startswith("../"):
+                _, url = url.split("/", 1)
+                if "/" in dir:
+                    dir, _ = dir.rsplit("/", 1)
+            url = dir + "/" + url
+        
+        # 기본 포트는 생략 (HTTP: 80, HTTPS: 443)
+        default_ports = {"http": 80, "https": 443}
+        default_port = default_ports.get(current_url.schema)
+        
+        if default_port and current_url.port == default_port:
+            url_str = current_url.schema + "://" + current_url.host + url
+        else:
+            url_str = current_url.schema + "://" + current_url.host + \
+                     ":" + str(current_url.port) + url
+        
+        return URLFactory.parse(url_str)

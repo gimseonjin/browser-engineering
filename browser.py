@@ -1,10 +1,13 @@
 import tkinter
 import sys
 
-from parser import HTMLParser
+from parser import CSSParser, HTMLParser, style, tree_to_list
+from selector import cascade_priority
 from url import URLFactory
 from constants import HEIGHT, SCROLL_STEP, VSTEP, HSTEP
-from layout import BlockLayout, DocumentLayout, paint_tree
+from layout import BlockLayout, DocumentLayout, Element, paint_tree
+
+DEFAULT_STYLE_SHEET = CSSParser(open("Browser.css").read()).parse()
 
 class Browser:
     def __init__(self):
@@ -15,7 +18,7 @@ class Browser:
         self.frame.pack(fill="both", expand=True)
         
         # Canvas 생성
-        self.canvas = tkinter.Canvas(self.frame)
+        self.canvas = tkinter.Canvas(self.frame, bg="white")
         self.canvas.pack(side="left", fill="both", expand=True)
         
         # Scrollbar 생성
@@ -113,6 +116,23 @@ class Browser:
                 raise Exception("Redirect without Location header")
         
         self.nodes = nodes
+        rules = DEFAULT_STYLE_SHEET.copy()
+        style(nodes,sorted(rules, key=cascade_priority))
+
+        links = [node.attributes for node in tree_to_list(self.nodes, [])
+                if isinstance(node, Element)
+                and node.tag == "link"
+                and node.attributes.get("rel") == "stylesheet"
+                and "href" in node.attributes]
+
+        for link in links:
+            style_url = URLFactory.resolve(url_obj, link)
+            try:
+                body = style_url.request()
+            except:
+                continue
+            rules.extend(CSSParser(body).parse())
+            
         self.document = DocumentLayout(self.nodes, self.width)
         self.document.layout()
         self.display_list = []

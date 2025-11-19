@@ -2,15 +2,74 @@
 <html>
 <head>
     <title>Layout Test Page</title>
+    <link rel="stylesheet" href="/Browser.css">
+    <link rel="icon" href="favicon.ico">
+    <link rel="alternate" type="application/rss+xml" href="feed.xml">
 </head>
 <body>
     <h1>Layout 테스트 페이지</h1>
     
     <p>이것은 일반 텍스트입니다. <br/> Layout 클래스가 텍스트를 올바르게 렌더링하는지 테스트합니다.</p>
     
+    <pre>이것은 pre 태그입니다. 
+여러 줄의 텍스트가 
+그대로 표시됩니다.
+CSS에서 gray 배경색이 적용되어야 합니다.</pre>
+    
+    <p style="color: red; font-size: 20px;">이 텍스트는 빨간색이고 크기가 20px입니다.</p>
+    
+    <h2>폰트 사이즈 테스트 섹션</h2>
+    
+    <p style="font-size: 10px;">이 텍스트는 매우 작은 10px 크기입니다.</p>
+    <p style="font-size: 12px;">이 텍스트는 12px 크기입니다.</p>
+    <p style="font-size: 14px;">이 텍스트는 14px 크기입니다.</p>
+    <p>이 텍스트는 기본 16px 크기입니다.</p>
+    <p style="font-size: 18px;">이 텍스트는 18px 크기입니다.</p>
+    <p style="font-size: 20px;">이 텍스트는 20px 크기입니다.</p>
+    <p style="font-size: 24px;">이 텍스트는 24px 크기입니다.</p>
+    <p style="font-size: 32px;">이 텍스트는 큰 32px 크기입니다.</p>
+    <p style="font-size: 48px;">이 텍스트는 매우 큰 48px 크기입니다.</p>
+    
+    <h3>상대 크기 테스트 (% 단위)</h3>
+    <p style="font-size: 50%;">이 텍스트는 50% 크기입니다 (기본의 절반).</p>
+    <p style="font-size: 75%;">이 텍스트는 75% 크기입니다.</p>
+    <p style="font-size: 120%;">이 텍스트는 120% 크기입니다.</p>
+    <p style="font-size: 150%;">이 텍스트는 150% 크기입니다.</p>
+    <p style="font-size: 200%;">이 텍스트는 200% 크기입니다 (기본의 두 배).</p>
+    
+    <h3>혼합된 폰트 사이즈 테스트</h3>
+    <p>일반 크기 텍스트와 <span style="font-size: 10px;">작은 10px</span>, <span style="font-size: 24px;">큰 24px</span>, <span style="font-size: 32px;">더 큰 32px</span>가 한 문장에 있습니다.</p>
+    <p>이 문장에는 <span style="font-size: 50%;">50% 크기</span>, <span style="font-size: 75%;">75% 크기</span>, 기본 크기, <span style="font-size: 150%;">150% 크기</span>, <span style="font-size: 200%;">200% 크기</span>가 모두 포함되어 있습니다.</p>
+    <p><span style="font-size: 12px;">작은 텍스트</span>와 <span style="font-size: 20px;">큰 텍스트</span>가 섞여 있고, <span style="font-size: 14px; color: blue;">14px 파란색</span>과 <span style="font-size: 28px; color: red;">28px 빨간색</span>도 있습니다.</p>
+    
+    <h3>제목 태그의 폰트 사이즈</h3>
+    <h1>이것은 H1 제목입니다 (기본 크기)</h1>
+    <h2>이것은 H2 제목입니다</h2>
+    <h3>이것은 H3 제목입니다</h3>
+    <h4>이것은 H4 제목입니다</h4>
+    <h5>이것은 H5 제목입니다</h5>
+    <h6>이것은 H6 제목입니다</h6>
+    <h1 style="font-size: 40px;">이것은 커스텀 40px H1 제목입니다</h1>
+    <h2 style="font-size: 30px;">이것은 커스텀 30px H2 제목입니다</h2>
+    
+    <h3>small과 big 태그의 크기 확인</h3>
+    <p>일반 텍스트, <small>small 태그 (90%)</small>, <big>big 태그 (110%)</big></p>
+    <p><small>작은 텍스트</small>와 <big>큰 텍스트</big>가 같은 줄에 있습니다.</p>
+    <p><small style="font-size: 12px;">small 태그에 12px 직접 지정</small>과 <big style="font-size: 24px;">big 태그에 24px 직접 지정</big></p>
+    
     <p>이 텍스트는 <i>이탤릭체</i>로 표시되어야 합니다.</p>
     
+    <p style="background-color: yellow; padding: 10px;">이 텍스트는 노란색 배경과 패딩을 가집니다.</p>
+    
     <p>이 텍스트는 <b>굵게</b> 표시되어야 합니다.</p>
+    
+    <p style="background-color: red;">빨간색 배경을 가진 문단입니다.</p>
+    
+    <p style="background-color: green;">초록색 배경을 가진 문단입니다.</p>
+    
+    <h1 style="color: blue; margin: 15px;">스타일이 적용된 제목입니다.</h1>
+    
+    <h2 style="background-color: lightgray;">회색 배경을 가진 제목입니다.</h2>
     
     <p>이 텍스트는 <i><b>이탤릭체이면서 굵게</b></i> 표시되어야 합니다.</p>
     
@@ -30,7 +89,15 @@
     
     <p>태그가 중첩된 경우를 테스트합니다: <b>굵은 텍스트 안에 <i>이탤릭체</i>가 있습니다</b>.</p>
     
+    <p style="border: 2px solid black;">테두리가 있는 문단입니다. <span style="color: green; font-weight: bold;">초록색 굵은 텍스트</span>가 포함되어 있습니다.</p>
+    
     <p>태그가 순서대로 닫히는 경우: <i>이탤릭체 <b>굵게</b> 이탤릭체</i>.</p>
+    
+    <div style="width: 300px; height: 100px; background-color: lightblue;">div 요소에 스타일이 적용되었습니다.</div>
+    
+    <p style="background-color: orange;">주황색 배경을 가진 문단입니다.</p>
+    
+    <p style="background-color: purple; color: white;">보라색 배경에 흰색 텍스트입니다.</p>
     
     <p>빈 줄도 테스트합니다:
     
