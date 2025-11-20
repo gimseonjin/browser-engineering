@@ -104,6 +104,123 @@ CSS에서 gray 배경색이 적용되어야 합니다.</pre>
     위와 아래에 빈 줄이 있어야 합니다.</p>
     
     <p>마지막으로 <small>작은</small> 텍스트와 <big>큰</big> 텍스트가 섞인 문장입니다. 이것은 <i>이탤릭체</i>와 <b>굵은</b> 텍스트도 포함하고 있습니다.</p>
+    
+    <h2>Input 태그 테스트</h2>
+    
+    <h3>기본 Input 타입</h3>
+    <p>
+        <label>텍스트 입력: <input type="text" value="기본 텍스트" /></label><br/>
+        <label>비밀번호 입력: <input type="password" value="password123" /></label><br/>
+        <label>이메일 입력: <input type="email" value="test@example.com" /></label><br/>
+        <label>숫자 입력: <input type="number" value="123" /></label><br/>
+        <label>날짜 입력: <input type="date" value="2024-01-15" /></label><br/>
+        <label>시간 입력: <input type="time" value="14:30" /></label><br/>
+        <label>색상 선택: <input type="color" value="#ff0000" /></label><br/>
+        <label>파일 선택: <input type="file" /></label><br/>
+        <label>범위 입력: <input type="range" min="0" max="100" value="50" /></label><br/>
+    </p>
+    
+    <h3>Checkbox와 Radio</h3>
+    <p>
+        <label><input type="checkbox" checked /> 체크된 체크박스</label><br/>
+        <label><input type="checkbox" /> 체크되지 않은 체크박스</label><br/>
+        <label><input type="radio" name="radio1" checked /> 라디오 버튼 1 (선택됨)</label><br/>
+        <label><input type="radio" name="radio1" /> 라디오 버튼 2</label><br/>
+        <label><input type="radio" name="radio2" /> 다른 그룹 라디오 1</label><br/>
+        <label><input type="radio" name="radio2" checked /> 다른 그룹 라디오 2 (선택됨)</label><br/>
+    </p>
+    
+    <h3>스타일이 적용된 Input</h3>
+    <p>
+        <label>빨간색 테두리: <input type="text" value="스타일 적용" style="border: 2px solid red; padding: 5px;" /></label><br/>
+        <label>큰 폰트: <input type="text" value="큰 텍스트" style="font-size: 20px; padding: 10px;" /></label><br/>
+        <label>파란색 배경: <input type="text" value="배경색" style="background-color: lightblue; padding: 5px;" /></label><br/>
+        <label>넓은 입력: <input type="text" value="넓은 필드" style="width: 300px; padding: 8px;" /></label><br/>
+        <label>높은 입력: <input type="text" value="높은 필드" style="height: 40px; font-size: 18px; padding: 5px;" /></label><br/>
+        <label>둥근 모서리: <input type="text" value="둥근 모서리" style="border-radius: 10px; padding: 8px; border: 1px solid gray;" /></label><br/>
+        <label>초록색 테두리: <input type="text" value="초록색" style="border: 3px solid green; padding: 5px; background-color: lightgreen;" /></label><br/>
+    </p>
+    
+    <h3>비활성화된 Input</h3>
+    <p>
+        <label>비활성화된 입력: <input type="text" value="비활성화됨" disabled /></label><br/>
+        <label>읽기 전용 입력: <input type="text" value="읽기 전용" readonly /></label><br/>
+        <label>비활성화된 체크박스: <input type="checkbox" checked disabled /> 체크됨</label><br/>
+    </p>
+    
+    <h3>Placeholder와 다양한 속성</h3>
+    <p>
+        <label>플레이스홀더: <input type="text" placeholder="여기에 입력하세요" /></label><br/>
+        <label>최대 길이: <input type="text" maxlength="10" placeholder="최대 10자" /></label><br/>
+        <label>최소/최대 값: <input type="number" min="0" max="100" value="50" /></label><br/>
+        <label>필수 입력: <input type="text" required placeholder="필수 입력 필드" /></label><br/>
+        <label>자동 포커스: <input type="text" autofocus placeholder="자동 포커스" /></label><br/>
+    </p>
+    
+    <h2>Button 태그 테스트</h2>
+    
+    <h3>기본 Button 타입</h3>
+    <p>
+        <button type="button">기본 버튼</button>
+        <button type="submit">제출 버튼</button>
+        <button type="reset">초기화 버튼</button>
+    </p>
+    
+    <h3>다양한 스타일의 Button</h3>
+    <p>
+        <button style="background-color: blue; color: white; padding: 10px 20px;">파란색 버튼</button>
+        <button style="background-color: red; color: white; padding: 10px 20px;">빨간색 버튼</button>
+        <button style="background-color: green; color: white; padding: 10px 20px;">초록색 버튼</button>
+        <button style="background-color: orange; color: white; padding: 10px 20px;">주황색 버튼</button>
+    </p>
+    
+    <h3>다양한 크기의 Button</h3>
+    <p>
+        <button style="font-size: 12px; padding: 5px 10px;">작은 버튼</button>
+        <button style="font-size: 16px; padding: 10px 20px;">중간 버튼</button>
+        <button style="font-size: 24px; padding: 15px 30px;">큰 버튼</button>
+        <button style="font-size: 32px; padding: 20px 40px;">매우 큰 버튼</button>
+    </p>
+    
+    <h3>테두리와 둥근 모서리</h3>
+    <p>
+        <button style="border: 2px solid black; padding: 10px 20px;">검은색 테두리</button>
+        <button style="border: 3px solid blue; padding: 10px 20px;">파란색 테두리</button>
+        <button style="border-radius: 10px; padding: 10px 20px; background-color: lightblue;">둥근 모서리</button>
+        <button style="border-radius: 20px; padding: 10px 20px; background-color: lightgreen;">매우 둥근 모서리</button>
+    </p>
+    
+    <h3>여러 스타일 조합</h3>
+    <p>
+        <button style="background-color: purple; color: white; font-size: 18px; padding: 12px 24px; border-radius: 5px;">보라색 굵은 버튼</button>
+        <button style="background-color: yellow; color: black; font-weight: bold; padding: 10px 20px; border: 2px solid orange;">노란색 굵은 버튼</button>
+        <button style="background-color: gray; color: white; font-size: 14px; padding: 8px 16px; border: 1px solid black;">회색 작은 버튼</button>
+    </p>
+    
+    <h3>비활성화된 Button</h3>
+    <p>
+        <button disabled>비활성화된 버튼</button>
+        <button disabled style="background-color: gray; color: white; padding: 10px 20px;">스타일 적용된 비활성 버튼</button>
+    </p>
+    
+    <h3>Input과 Button 조합</h3>
+    <p>
+        <input type="text" placeholder="검색어 입력" style="padding: 8px; width: 200px;" />
+        <button type="button" style="padding: 8px 16px; background-color: blue; color: white;">검색</button>
+    </p>
+    <p>
+        <input type="email" placeholder="이메일 주소" style="padding: 10px; width: 250px; border: 1px solid gray;" />
+        <button type="submit" style="padding: 10px 20px; background-color: green; color: white; border-radius: 5px;">구독</button>
+    </p>
+    
+    <h3>여러 버튼이 한 줄에</h3>
+    <p>
+        <button>버튼 1</button>
+        <button>버튼 2</button>
+        <button>버튼 3</button>
+        <button>버튼 4</button>
+        <button>버튼 5</button>
+    </p>
 </body>
 </html>
 

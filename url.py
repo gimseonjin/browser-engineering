@@ -104,15 +104,22 @@ class HTTPBase(URL):
         )
         return s
 
-    def _send_http_request(self, s):
+    def _send_http_request(self, s, payload=None):
+        method = "POST" if payload else "GET"
         req = (
-            f"GET {self.path} HTTP/1.1\r\n"
+            f"{method} {self.path} HTTP/1.1\r\n"
             f"Host: {self.host}\r\n"
             f"User-Agent: {self.user_agent}\r\n"
             f"Connection: keep-alive\r\n"
             f"Accept-Encoding: gzip\r\n"
-            f"\r\n"
         )
+        if payload:
+            req += f"Content-Type: application/x-www-form-urlencoded\r\n"
+            req += f"Content-Length: {len(payload.encode('utf-8'))}\r\n"
+            req += f"\r\n"
+            req += payload
+        else:
+            req += f"\r\n"
         s.send(req.encode("utf-8"))
 
     def _get_socket_key(self):
@@ -120,7 +127,11 @@ class HTTPBase(URL):
     
     def _get_socket(self):
         key = self._get_socket_key()
-        return self._socket_map.get(key)
+        s = self._socket_map.get(key)
+        if s and s.fileno() == -1:  # 소켓이 닫혔는지 확인
+            self._socket_map.pop(key, None)
+            return None
+        return s
     
     def _set_socket(self, s):
         key = self._get_socket_key()
@@ -135,7 +146,13 @@ class HTTPBase(URL):
 
         # status line
         status_line = response.readline().decode("utf-8")
-        version, status, explanation = status_line.split(" ", 2)
+        print(f"Status line received: {repr(status_line)}")
+        status_parts = status_line.split(" ", 2)
+        print(f"Status parts: {status_parts}")
+        if len(status_parts) != 3:
+            print(f"Invalid status line format: expected 3 parts, got {len(status_parts)}")
+            raise ValueError(f"Invalid HTTP status line: {repr(status_line)}")
+        version, status, explanation = status_parts
         
         # headers
         headers = {}
@@ -195,7 +212,7 @@ class HTTPURL(HTTPBase):
         if self.port is None:
             self.port = 80
 
-    def request(self):
+    def request(self, payload=None):
         url_str = f"{self.schema}://{self.raw_url}"
         
         # 캐시 확인
@@ -210,8 +227,13 @@ class HTTPURL(HTTPBase):
             s.connect((self.host, self.port))
             self._set_socket(s)
         
-        self._send_http_request(s)
+        self._send_http_request(s, payload)
         status, headers, body = self._read_http_response(s)
+        
+        # 서버가 Connection: close를 보내면 소켓 닫기
+        if headers.get("connection", "").lower() == "close":
+            s.close()
+            self._remove_socket()
         
         # 캐시 저장
         _cache_manager.set(url_str, status, headers, body)
@@ -224,7 +246,7 @@ class HTTPSURL(HTTPBase):
         if self.port is None:
             self.port = 443
 
-    def request(self):
+    def request(self, payload=None):
         url_str = f"{self.schema}://{self.raw_url}"
         
         # 캐시 확인
@@ -242,8 +264,13 @@ class HTTPSURL(HTTPBase):
             s.connect((self.host, self.port))
             self._set_socket(s)
         
-        self._send_http_request(s)
+        self._send_http_request(s, payload)
         status, headers, body = self._read_http_response(s)
+        
+        # 서버가 Connection: close를 보내면 소켓 닫기
+        if headers.get("connection", "").lower() == "close":
+            s.close()
+            self._remove_socket()
         
         # 캐시 저장
         _cache_manager.set(url_str, status, headers, body)

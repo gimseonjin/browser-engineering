@@ -10,3 +10,13 @@ h3 { font-size: 1.17em; font-weight: bold;}
 h4 { font-size: 1em; font-weight: bold;}
 h5 { font-size: 0.83em; font-weight: bold;}
 h6 { font-size: 0.67em; font-weight: bold;}
+
+input {
+    font-size: 16px; font-weight: normal; font-style: normal;
+    background-color: lightblue;
+}
+
+button {
+    font-size: 16px; font-weight: normal; font-style: normal;
+    background-color: orange;
+}

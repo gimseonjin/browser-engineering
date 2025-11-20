@@ -19,6 +19,7 @@ class Text:
         self.text = text
         self.children = []
         self.parent = parent
+        self.is_focus = False
     
     def __repr__(self) -> str:
         return repr(self.text)
@@ -29,6 +30,7 @@ class Element:
         self.attributes = attributes
         self.children = []
         self.parent = parent
+        self.is_focus = False
 
     def __repr__(self) -> str:
         return f"<{self.tag}>"
@@ -113,6 +115,11 @@ class DocumentLayout:
 
     def paint(self):
         return []
+    
+    def should_paint(self):
+        return isinstance(self.node, Text) or \
+            (self.node.tag == "input" or self.node.tag == "button")
+
 
 class BlockLayout:
     BLOCK_ELEMENTS = [
@@ -147,7 +154,7 @@ class BlockLayout:
                 for child in self.node.children]):
             return "block"
 
-        elif self.node.children:
+        elif self.node.children or self.node.tag == "input" or self.node.tag == "button":
             return "inline"
         else:
             return "block"
@@ -196,8 +203,11 @@ class BlockLayout:
         else:
             if node.tag == "br":
                 self.new_line()
-            for child in node.children:
-                self.recurse(child)
+            elif node.tag == "input" or node.tag == "button":
+                self.input(node)
+            else:
+                for child in node.children:
+                    self.recurse(child)
 
     def word(self, node, word):
         line = self.children[-1]
@@ -265,6 +275,32 @@ class BlockLayout:
 
         return cmds
 
+    def should_paint(self):
+        return isinstance(self.node, Text) or \
+            (self.node.tag != "input" and self.node.tag != "button")
+
+    def input(self, node):
+        line = self.children[-1]
+        previous_word = line.children[-1] if line.children else None
+        
+        # 이전 요소가 있으면 먼저 layout 호출하여 위치 계산
+        if previous_word and (not hasattr(previous_word, 'x') or previous_word.x is None):
+            previous_word.layout()
+        
+        # 임시로 InputLayout 생성하여 줄바꿈 필요 여부 확인
+        temp_input = InputLayout(node, line, previous_word)
+        temp_input.layout()
+        
+        # 줄을 넘어가면 새 줄 생성
+        if temp_input.x + INPUT_WIDHT_PX > line.x + line.width:
+            self.new_line()
+            line = self.children[-1]
+            previous_word = None
+        
+        # 실제 InputLayout 생성 및 추가
+        input = InputLayout(node, line, previous_word)
+        line.children.append(input)
+
 class LineLayout:
     def __init__(self, node, parent, previous):
         self.node = node
@@ -308,6 +344,9 @@ class LineLayout:
 
     def paint(self):
         return []
+    
+    def should_paint(self):
+        return False
 
 class TextLayout:
     def __init__(self, node, word, parent, previous):
@@ -341,9 +380,77 @@ class TextLayout:
     def paint(self):
         color = self.node.style["color"]
         return [DrawText(self.x, self.y, self.word, self.font, color)]
+    
+    def should_paint(self):
+        return True
+
+INPUT_WIDHT_PX = 200
+
+class InputLayout:
+    def __init__(self, node, parent, previous):
+        self.node = node
+        self.children = []
+        self.parent = parent
+        self.previous = previous
+        self.width = INPUT_WIDHT_PX
+
+    def layout(self):
+        color = self.node.style["color"]
+        weight = self.node.style["font-weight"]
+        style = self.node.style["font-style"]
+        if style == "normal":
+            style = "roman"
+        elif style == "oblique":
+            style = "italic"
+        size = int(float(self.node.style["font-size"][:-2]) * .75)
+        self.font = get_font(size, weight, style)
+
+        self.width = INPUT_WIDHT_PX
+
+        # TextLayout처럼 이전 요소의 위치를 고려한 x 위치 계산
+        if self.previous:
+            space = self.font.measure(" ")
+            self.x = self.previous.x + self.previous.width + space
+        else:
+            self.x = self.parent.x
+
+        self.height = self.font.metrics("linespace")
+        
+    def paint(self):
+        cmds = []
+        bgcolor = self.node.style.get("background-color",
+                                        "transparent")
+        if bgcolor != "transparent":
+            rect = DrawRect(self.x, self.y, self.x + self.width, self.y + self.height, bgcolor)
+            cmds.append(rect)
+
+        if self.node.tag == "input":
+            text = self.node.attributes.get("value", "")
+        elif self.node.tag == "button":
+            if len(self.node.children) == 1 and \
+                isinstance(self.node.children[0], Text):
+                text = self.node.children[0].text
+            else:
+                print("Ignoring HTML contents inside button")
+                text = ""
+
+        if self.node.is_focus:
+            cx = self.x + self.font.measure(text)
+            cmds.append(DrawLine(
+                cx, self.y, cx, self.y + self.height, "black", 1
+            ))
+            
+        color = self.node.style["color"]
+        cmds.append(DrawText(self.x, self.y, text, self.font, color))
+
+        return cmds
+    
+    def should_paint(self):
+        return True
 
 def paint_tree(layout_object, display_list):
-    display_list.extend(layout_object.paint())
+    if layout_object.should_paint():
+        display_list.extend(layout_object.paint())
 
     for child in layout_object.children:
         paint_tree(child, display_list)
