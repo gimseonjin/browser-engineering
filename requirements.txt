@@ -1,0 +1,16 @@
+# Browser Engine Dependencies
+
+# SDL2 - 창/입력 관리
+PySDL2>=0.9.17
+pysdl2-dll>=2.32.0
+
+# Skia - GPU 가속 2D 렌더링
+skia-python>=138.0
+
+# OpenGL - GPU 컨텍스트
+PyOpenGL>=3.1.10
+PyOpenGL-accelerate>=3.1.10
+
+# Skia 의존성
+numpy>=2.3.0
+pybind11>=2.6
